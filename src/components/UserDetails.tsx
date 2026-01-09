@@ -50,16 +50,26 @@ const UserDetails: React.FC = () => {
 
                 <div className="user-info-section">
                     <div className="user-avatar">
-                        {user.photo ? (
-                            <img src={`${window.location.protocol}//${window.location.hostname}:3001${user.photo}`}
+                        {user.photo && (user.photo.startsWith('http://') || user.photo.startsWith('https://')) ? (
+                            <img
+                                src={user.photo}
                                 alt="User Photo"
-                                className="user-photo" />
-                        ) : (
-                            <div className="avatar-circle">
-                                {user.firstName.charAt(0).toUpperCase()}
-                                {user.lastName.charAt(0).toUpperCase()}
-                            </div>
-                        )}
+                                className="user-photo"
+                                onError={(e) => {
+                                    // If image fails to load, hide it and show avatar initials
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    // Show the avatar circle
+                                    const avatarCircle = target.parentElement?.querySelector('.avatar-circle') as HTMLElement;
+                                    if (avatarCircle) {
+                                        avatarCircle.style.display = 'flex';
+                                    }
+                                }} />
+                        ) : null}
+                        <div className="avatar-circle" style={{ display: (user.photo && user.photo.startsWith('http')) ? 'none' : 'flex' }}>
+                            {user.firstName.charAt(0).toUpperCase()}
+                            {user.lastName.charAt(0).toUpperCase()}
+                        </div>
                     </div>
 
                     <div className="user-details-grid">
