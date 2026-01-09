@@ -65,10 +65,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     const handleQRResult = async (qrData: string) => {
         try {
             console.log('📱 QR Code scanned:', qrData);
-            
+
             // Parse QR code data - it should contain a UID
             let userId: string | null = null;
-            
+
             try {
                 // Try to parse as JSON first (QR codes might contain JSON with uid field)
                 const parsed = JSON.parse(qrData);
@@ -92,7 +92,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                 console.log('✅ User found:', userData);
                 // Stop scanning and redirect to user details page
                 stopScanning();
-                
+
                 // Convert UserData to the format expected by UserDetails component
                 const userForDetails = {
                     id: userData.id || userId,
@@ -106,7 +106,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                     createdAt: userData.createdAt?.toISOString() || new Date().toISOString(),
                     updatedAt: userData.updatedAt?.toISOString() || new Date().toISOString(),
                 };
-                
+
                 navigate('/user-details', { state: { user: userForDetails } });
             } else {
                 setError('User not found in database.');
