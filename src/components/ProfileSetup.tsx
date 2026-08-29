@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getUserFromFirestore, saveUserToFirestore } from '../services/userService';
 import type { UserData } from '../types/user';
 import { USERS_COLLECTION } from '../config/firestoreCollections';
+import { APP_NAME } from '../config/app';
 import './ProfileSetup.css';
 
 const isProfileComplete = (u: UserData | null) => {
@@ -13,7 +14,7 @@ const isProfileComplete = (u: UserData | null) => {
 };
 
 const ProfileSetup: React.FC = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
     const email = currentUser?.email ?? '';
 
@@ -80,14 +81,13 @@ const ProfileSetup: React.FC = () => {
         e.preventDefault();
         if (!currentUser) return;
         if (!canSubmit) {
-            setError('Please fill first name, last name, DOB, address, and phone number.');
+            setError('Please fill first name, last name, date of birth, address, and phone number.');
             return;
         }
 
         setSaving(true);
         setError(null);
         try {
-            // Email is taken from Google Auth; user does not edit it here.
             await saveUserToFirestore(currentUser.uid, {
                 ...form,
                 email: currentUser.email ?? form.email,
@@ -96,7 +96,6 @@ const ProfileSetup: React.FC = () => {
             console.log('✅ Profile saved to Firestore (users/{uid})', { uid: currentUser.uid });
             navigate('/dashboard', { replace: true });
         } catch (e: any) {
-            // Firestore rule errors show as "Missing or insufficient permissions."
             if (e?.code === 'permission-denied' || String(e?.message || '').includes('Missing or insufficient permissions')) {
                 setError(
                     `Missing or insufficient permissions. Update Firestore Rules to allow write to ${USERS_COLLECTION}/{uid} (uid=${currentUser.uid}).`
@@ -111,11 +110,18 @@ const ProfileSetup: React.FC = () => {
 
     if (!currentUser) {
         return (
-            <div className="profile-setup-container">
-                <div className="profile-card">
-                    <h1>Sign in required</h1>
-                    <p>Please sign in first.</p>
-                    <button className="primary-btn" onClick={() => navigate('/login')}>Go to Login</button>
+            <div className="page page--center">
+                <div className="shell shell--sm">
+                    <div className="card">
+                        <p className="brand">{APP_NAME}</p>
+                        <h1 className="page-title">Sign in required</h1>
+                        <p className="page-subtitle">Please sign in to continue.</p>
+                        <div className="auth-actions">
+                            <button type="button" className="btn btn--primary btn--block" onClick={() => navigate('/login')}>
+                                Go to login
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -123,75 +129,91 @@ const ProfileSetup: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="profile-setup-container">
-                <div className="profile-card">
-                    <div className="loading">Loading profile...</div>
+            <div className="page page--center">
+                <div className="shell shell--sm">
+                    <div className="card">
+                        <div className="loading">
+                            <div className="spinner" aria-hidden="true" />
+                            Loading profile…
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="profile-setup-container">
-            <div className="profile-card">
-                <div className="profile-header">
-                    <div className="profile-title">
-                        <h1>Complete your profile</h1>
-                        <p>Fill this once. We’ll save it in Firebase (Firestore).</p>
+        <div className="page page--stack">
+            <div className="shell shell--lg">
+                <header className="page-header">
+                    <div className="page-header__copy">
+                        <p className="brand">{APP_NAME}</p>
+                        <h1 className="page-title">Complete your profile</h1>
+                        <p className="page-subtitle">A few details so we can generate your QR code.</p>
                     </div>
-                    {currentUser.photoURL && (
-                        <img className="avatar" src={currentUser.photoURL} alt="Profile" />
-                    )}
+                    <div className="page-header__actions">
+                        <button type="button" className="btn btn--ghost" onClick={() => logout()}>
+                            Sign out
+                        </button>
+                    </div>
+                </header>
+
+                <div className="card">
+                    <div className="profile-intro">
+                        {currentUser.photoURL && (
+                            <img className="avatar" src={currentUser.photoURL} alt="" />
+                        )}
+                        <p className="identity__meta">{email}</p>
+                    </div>
+
+                    <form onSubmit={onSubmit} className="form">
+                        <div className="form-grid">
+                            <div className="field">
+                                <label htmlFor="firstName">First name</label>
+                                <input id="firstName" name="firstName" value={form.firstName} onChange={onChange} placeholder="First name" required />
+                            </div>
+
+                            <div className="field">
+                                <label htmlFor="middleName">Middle name</label>
+                                <input id="middleName" name="middleName" value={form.middleName ?? ''} onChange={onChange} placeholder="Optional" />
+                            </div>
+
+                            <div className="field">
+                                <label htmlFor="lastName">Last name</label>
+                                <input id="lastName" name="lastName" value={form.lastName} onChange={onChange} placeholder="Last name" required />
+                            </div>
+
+                            <div className="field">
+                                <label htmlFor="dob">Date of birth</label>
+                                <input id="dob" name="dob" type="date" value={form.dob ?? ''} onChange={onChange} required />
+                            </div>
+
+                            <div className="field field--full">
+                                <label htmlFor="address">Address</label>
+                                <textarea id="address" name="address" value={form.address ?? ''} onChange={onChange} placeholder="Street, city" rows={3} required />
+                            </div>
+
+                            <div className="field">
+                                <label htmlFor="phoneNumber">Phone number</label>
+                                <input id="phoneNumber" name="phoneNumber" type="tel" value={form.phoneNumber} onChange={onChange} placeholder="Phone number" required />
+                            </div>
+
+                            <div className="field">
+                                <label htmlFor="email">Email</label>
+                                <input id="email" value={email} disabled />
+                            </div>
+                        </div>
+
+                        {error && <div className="alert alert--error" role="alert">{error}</div>}
+
+                        <button type="submit" className="btn btn--primary btn--block" disabled={saving || !canSubmit}>
+                            {saving ? 'Saving…' : 'Continue'}
+                        </button>
+                    </form>
                 </div>
-
-                <form onSubmit={onSubmit} className="profile-form">
-                    <div className="grid">
-                        <div className="field">
-                            <label>First name</label>
-                            <input name="firstName" value={form.firstName} onChange={onChange} placeholder="First name" />
-                        </div>
-
-                        <div className="field">
-                            <label>Middle name (optional)</label>
-                            <input name="middleName" value={form.middleName ?? ''} onChange={onChange} placeholder="Middle name" />
-                        </div>
-
-                        <div className="field">
-                            <label>Last name</label>
-                            <input name="lastName" value={form.lastName} onChange={onChange} placeholder="Last name" />
-                        </div>
-
-                        <div className="field">
-                            <label>Date of birth</label>
-                            <input name="dob" type="date" value={form.dob ?? ''} onChange={onChange} />
-                        </div>
-
-                        <div className="field full">
-                            <label>Address</label>
-                            <textarea name="address" value={form.address ?? ''} onChange={onChange} placeholder="Address" rows={3} />
-                        </div>
-
-                        <div className="field">
-                            <label>Phone number</label>
-                            <input name="phoneNumber" value={form.phoneNumber} onChange={onChange} placeholder="Phone number" />
-                        </div>
-
-                        <div className="field">
-                            <label>Email (from Google)</label>
-                            <input value={email} disabled />
-                        </div>
-                    </div>
-
-                    {error && <div className="error">{error}</div>}
-
-                    <button type="submit" className="primary-btn" disabled={saving || !canSubmit}>
-                        {saving ? 'Saving...' : 'Continue'}
-                    </button>
-                </form>
             </div>
         </div>
     );
 };
 
 export default ProfileSetup;
-

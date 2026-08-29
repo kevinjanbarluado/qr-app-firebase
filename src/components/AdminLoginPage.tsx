@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdminEmail } from '../config/adminConfig';
+import { APP_NAME } from '../config/app';
 import './AdminLogin.css';
 
 const AdminLoginPage: React.FC = () => {
@@ -17,17 +18,14 @@ const AdminLoginPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
 
-        // Validate email before attempting login
         if (!isAdminEmail(email)) {
-            setError('Access denied. Only admin@perlasngsilangan.com can access this page.');
+            setError('Access denied. Only authorized admin accounts can sign in here.');
             setIsLoading(false);
             return;
         }
 
         try {
             await login(email, password);
-            // Check if user is admin after login
-            // Navigation will be handled by route protection
             navigate('/admin');
         } catch (err: any) {
             let errorMessage = 'Failed to sign in. Please check your credentials.';
@@ -53,52 +51,57 @@ const AdminLoginPage: React.FC = () => {
     };
 
     return (
-        <div className="admin-login-container">
-            <div className="admin-login-card">
-                <h1>Admin Login</h1>
-                <p>Enter your credentials to access the admin dashboard</p>
+        <div className="page page--center">
+            <div className="shell shell--sm">
+                <div className="card">
+                    <p className="brand">{APP_NAME}</p>
+                    <h1 className="page-title">Admin</h1>
+                    <p className="page-subtitle">Sign in to scan member QR codes.</p>
 
-                <form onSubmit={handleSubmit} className="admin-login-form">
-                    <div className="form-group">
-                        <label htmlFor="email">Email</label>
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="admin@example.com"
-                            required
-                            disabled={isLoading}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Enter your password"
-                            required
-                            disabled={isLoading}
-                        />
-                    </div>
-
-                    {error && (
-                        <div className="error-message">
-                            {error}
+                    <form onSubmit={handleSubmit} className="form">
+                        <div className="field">
+                            <label htmlFor="email">Email</label>
+                            <input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="admin@example.com"
+                                autoComplete="username"
+                                required
+                                disabled={isLoading}
+                            />
                         </div>
-                    )}
 
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="submit-btn"
-                    >
-                        {isLoading ? 'Signing in...' : 'Sign In'}
-                    </button>
-                </form>
+                        <div className="field">
+                            <label htmlFor="password">Password</label>
+                            <input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Password"
+                                autoComplete="current-password"
+                                required
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        {error && (
+                            <div className="alert alert--error" role="alert">
+                                {error}
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="btn btn--primary btn--block"
+                        >
+                            {isLoading ? 'Signing in…' : 'Sign in'}
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     );

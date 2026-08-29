@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import QrScanner from 'qr-scanner';
 import { useNavigate } from 'react-router-dom';
 import { getUserFromFirestore } from '../services/userService';
+import { APP_NAME } from '../config/app';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -24,7 +25,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             setMessage(null);
             setIsScanning(true);
 
-            // Check if camera is available
             const hasCamera = await QrScanner.hasCamera();
             if (!hasCamera) {
                 setError('No camera found on this device.');
@@ -40,12 +40,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                 {
                     highlightScanRegion: true,
                     highlightCodeOutline: true,
-                    preferredCamera: 'environment', // Use back camera if available
+                    preferredCamera: 'environment',
                 }
             );
 
             await qrScannerRef.current.start();
-            setMessage('Camera started! Point at a QR code to scan.');
+            setMessage('Point the camera at a member QR code.');
         } catch (err) {
             console.error('Camera error:', err);
             setError('Failed to start camera. Please check permissions and try again.');
@@ -66,15 +66,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         try {
             console.log('📱 QR Code scanned:', qrData);
 
-            // Parse QR code data - it should contain a UID
             let userId: string | null = null;
 
             try {
-                // Try to parse as JSON first (QR codes might contain JSON with uid field)
                 const parsed = JSON.parse(qrData);
                 userId = parsed.uid || parsed.userId || parsed.id || null;
             } catch {
-                // If not JSON, assume the QR data itself is the UID
                 userId = qrData.trim();
             }
 
@@ -83,17 +80,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                 return;
             }
 
-            console.log('🔍 Looking up user with UID:', userId);
-
-            // Fetch user data directly from Firestore
             const userData = await getUserFromFirestore(userId);
 
             if (userData) {
-                console.log('✅ User found:', userData);
-                // Stop scanning and redirect to user details page
                 stopScanning();
 
-                // Convert UserData to the format expected by UserDetails component
                 const userForDetails = {
                     id: userData.id || userId,
                     firstName: userData.firstName || '',
@@ -110,17 +101,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                 navigate('/user-details', { state: { user: userForDetails } });
             } else {
                 setError('User not found in database.');
-                console.warn('⚠️ No user found for UID:', userId);
             }
         } catch (err) {
             console.error('❌ Error processing QR code:', err);
             setError(err instanceof Error ? err.message : 'Failed to process QR code. Please try again.');
         }
-    };
-
-    const clearResults = () => {
-        setMessage(null);
-        setError(null);
     };
 
     useEffect(() => {
@@ -132,59 +117,61 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     }, []);
 
     return (
-        <div className="admin-dashboard-container">
-            <div className="admin-header">
-                <h1>Admin Dashboard</h1>
-                <button onClick={() => onLogout()} className="logout-btn">
-                    Logout
-                </button>
-            </div>
+        <div className="page page--stack">
+            <div className="shell shell--lg">
+                <header className="page-header">
+                    <div className="page-header__copy">
+                        <p className="brand">{APP_NAME}</p>
+                        <h1 className="page-title">Scanner</h1>
+                        <p className="page-subtitle">Scan a member QR code to view their details.</p>
+                    </div>
+                    <div className="page-header__actions">
+                        <button type="button" onClick={() => onLogout()} className="btn btn--ghost">
+                            Sign out
+                        </button>
+                    </div>
+                </header>
 
-            <div className="scanner-section">
-                <div className="scanner-controls">
-                    {!isScanning ? (
-                        <button onClick={startScanning} className="scan-btn">
-                            Start QR Scanner
-                        </button>
-                    ) : (
-                        <button onClick={stopScanning} className="stop-btn">
-                            Stop Scanner
-                        </button>
+                <div className="card">
+                    <div className="scanner-controls">
+                        {!isScanning ? (
+                            <button type="button" onClick={startScanning} className="btn btn--primary">
+                                Start scanner
+                            </button>
+                        ) : (
+                            <button type="button" onClick={stopScanning} className="btn btn--danger">
+                                Stop scanner
+                            </button>
+                        )}
+                    </div>
+
+                    <div className={`video-container${isScanning ? ' is-live' : ''}`}>
+                        <video ref={videoRef} className="scanner-video" playsInline muted />
+                        {!isScanning && (
+                            <div className="camera-placeholder">
+                                <svg className="camera-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <rect x="2" y="6" width="20" height="14" rx="3" stroke="currentColor" strokeWidth="1.6" />
+                                    <circle cx="12" cy="13" r="3.5" stroke="currentColor" strokeWidth="1.6" />
+                                    <path d="M8 6l1.2-2h5.6L16 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                                </svg>
+                                <p>Camera is off</p>
+                                <p className="page-subtitle">Allow camera access when prompted.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {error && (
+                        <div className="alert alert--error" role="alert">
+                            {error}
+                        </div>
                     )}
 
-                    <button onClick={clearResults} className="clear-btn">
-                        Clear Results
-                    </button>
-                </div>
-
-                <div className="video-container">
-                    <video ref={videoRef} className="scanner-video" />
-                    {!isScanning && (
-                        <div className="camera-placeholder">
-                            <div className="placeholder-content">
-                                <div className="camera-icon">📷</div>
-                                <h3>QR Code Scanner</h3>
-                                <p>Click "Start QR Scanner" to begin scanning QR codes</p>
-                                <p className="instruction-text">
-                                    Make sure to allow camera permissions when prompted
-                                </p>
-                            </div>
+                    {message && isScanning && (
+                        <div className="alert alert--info">
+                            {message}
                         </div>
                     )}
                 </div>
-
-                {error && (
-                    <div className="error-message">
-                        {error}
-                    </div>
-                )}
-
-                {message && (
-                    <div className="message">
-                        {message}
-                    </div>
-                )}
-
             </div>
         </div>
     );

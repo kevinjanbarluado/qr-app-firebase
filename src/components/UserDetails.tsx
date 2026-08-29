@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { APP_NAME } from '../config/app';
 import './UserDetails.css';
 
 interface User {
@@ -26,114 +27,114 @@ const UserDetails: React.FC = () => {
 
     if (!user) {
         return (
-            <div className="user-details-container">
-                <div className="error-card">
-                    <h2>No User Data</h2>
-                    <p>No user information was found.</p>
-                    <button onClick={handleBack} className="back-btn">
-                        Back to Scanner
-                    </button>
+            <div className="page page--center">
+                <div className="shell shell--sm">
+                    <div className="card">
+                        <h1 className="page-title">No member found</h1>
+                        <p className="page-subtitle">There is no user information to show.</p>
+                        <div className="stack-actions">
+                            <button type="button" onClick={handleBack} className="btn btn--primary btn--block">
+                                Back to scanner
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
-    return (
-        <div className="user-details-container">
-            <div className="user-details-card">
-                <div className="header">
-                    <h1>User Details</h1>
-                    <button onClick={handleBack} className="back-btn">
-                        ← Back to Scanner
-                    </button>
-                </div>
+    const fullName = `${user.firstName} ${user.lastName}`.trim() || 'Member';
+    const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+    const hasPhoto = Boolean(user.photo && (user.photo.startsWith('http://') || user.photo.startsWith('https://')));
 
-                <div className="user-info-section">
-                    <div className="user-avatar">
-                        {user.photo && (user.photo.startsWith('http://') || user.photo.startsWith('https://')) ? (
+    return (
+        <div className="page page--stack">
+            <div className="shell shell--lg">
+                <header className="page-header">
+                    <div className="page-header__copy">
+                        <p className="brand">{APP_NAME}</p>
+                        <h1 className="page-title">Member</h1>
+                        <p className="page-subtitle">Details from the scanned QR code.</p>
+                    </div>
+                    <div className="page-header__actions">
+                        <button type="button" onClick={handleBack} className="btn btn--ghost">
+                            Back
+                        </button>
+                    </div>
+                </header>
+
+                <div className="card">
+                    <div className="member-hero">
+                        {hasPhoto ? (
                             <img
                                 src={user.photo}
-                                alt="User Photo"
-                                className="user-photo"
+                                alt=""
+                                className="avatar avatar--lg"
                                 onError={(e) => {
-                                    // If image fails to load, hide it and show avatar initials
                                     const target = e.target as HTMLImageElement;
                                     target.style.display = 'none';
-                                    // Show the avatar circle
-                                    const avatarCircle = target.parentElement?.querySelector('.avatar-circle') as HTMLElement;
-                                    if (avatarCircle) {
-                                        avatarCircle.style.display = 'flex';
-                                    }
-                                }} />
+                                    const fallback = target.parentElement?.querySelector('.avatar--initials') as HTMLElement;
+                                    if (fallback) fallback.style.display = 'flex';
+                                }}
+                            />
                         ) : null}
-                        <div className="avatar-circle" style={{ display: (user.photo && user.photo.startsWith('http')) ? 'none' : 'flex' }}>
-                            {user.firstName.charAt(0).toUpperCase()}
-                            {user.lastName.charAt(0).toUpperCase()}
+                        <div
+                            className="avatar avatar--lg avatar--initials"
+                            style={{ display: hasPhoto ? 'none' : 'flex' }}
+                        >
+                            {initials}
                         </div>
+                        <h2 className="identity__name">{fullName}</h2>
                     </div>
 
-                    <div className="user-details-grid">
-                        <div className="detail-item">
-                            <label>Full Name</label>
-                            <span>{user.firstName} {user.lastName}</span>
+                    <dl className="details-list">
+                        <div className="detail-row">
+                            <dt>Email</dt>
+                            <dd>{user.email}</dd>
                         </div>
-
-                        <div className="detail-item">
-                            <label>Email Address</label>
-                            <span>{user.email}</span>
+                        <div className="detail-row">
+                            <dt>Phone</dt>
+                            <dd>{user.phoneNumber}</dd>
                         </div>
-
-                        <div className="detail-item">
-                            <label>Phone Number</label>
-                            <span>{user.phoneNumber}</span>
-                        </div>
-
                         {user.address && (
-                            <div className="detail-item">
-                                <label>Address</label>
-                                <span>{user.address}</span>
+                            <div className="detail-row">
+                                <dt>Address</dt>
+                                <dd>{user.address}</dd>
                             </div>
                         )}
-
                         {user.dob && (
-                            <div className="detail-item">
-                                <label>Date of Birth</label>
-                                <span>{new Date(user.dob).toLocaleDateString('en-US', {
+                            <div className="detail-row">
+                                <dt>Date of birth</dt>
+                                <dd>{new Date(user.dob).toLocaleDateString('en-US', {
                                     year: 'numeric',
                                     month: 'long',
                                     day: 'numeric'
-                                })}</span>
+                                })}</dd>
                             </div>
                         )}
-
-                        <div className="detail-item">
-                            <label>Registration Date</label>
-                            <span>{new Date(user.createdAt).toLocaleDateString('en-US', {
+                        <div className="detail-row">
+                            <dt>Registered</dt>
+                            <dd>{new Date(user.createdAt).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })}</span>
+                            })}</dd>
                         </div>
-
-                        <div className="detail-item">
-                            <label>Last Updated</label>
-                            <span>{new Date(user.updatedAt).toLocaleDateString('en-US', {
+                        <div className="detail-row">
+                            <dt>Updated</dt>
+                            <dd>{new Date(user.updatedAt).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })}</span>
+                            })}</dd>
                         </div>
+                    </dl>
+
+                    <div className="stack-actions member-actions">
+                        <button type="button" onClick={handleBack} className="btn btn--primary btn--block">
+                            Scan another
+                        </button>
                     </div>
-                </div>
-
-                <div className="actions">
-                    <button onClick={handleBack} className="primary-btn">
-                        Scan Another QR Code
-                    </button>
                 </div>
             </div>
         </div>
