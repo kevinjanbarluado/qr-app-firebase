@@ -17,7 +17,6 @@ const UserDashboard: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const userDataRef = useRef<UserData | null>(null);
 
-    // Keep a ref so generateQRCode doesn't need to depend on userData (prevents effect re-run loops)
     useEffect(() => {
         userDataRef.current = userData;
     }, [userData]);
@@ -35,7 +34,6 @@ const UserDashboard: React.FC = () => {
         setIsLoading(false);
 
         try {
-            // Get user name - use userData if available, otherwise use Firebase Auth data
             let userName = 'User';
             const ud = userDataRef.current;
             if (ud && ud.firstName) {
@@ -63,11 +61,6 @@ const UserDashboard: React.FC = () => {
             setError(null);
         } catch (err: any) {
             console.error('❌ Error generating QR code locally:', err);
-            console.error('Error details:', {
-                message: err?.message,
-                stack: err?.stack,
-                name: err?.name,
-            });
             const errorMessage = err?.message || err?.toString() || 'Failed to generate QR code. Please try again later.';
             setError(errorMessage);
         } finally {
@@ -87,23 +80,9 @@ const UserDashboard: React.FC = () => {
             setError(null);
 
             try {
-                console.log('🔍 Loading user data for UID:', currentUser.uid);
-                console.log('📧 User email:', currentUser.email);
-                console.log('👤 Firebase Auth user:', {
-                    uid: currentUser.uid,
-                    displayName: currentUser.displayName,
-                    email: currentUser.email,
-                    photoURL: currentUser.photoURL,
-                });
-
-                // Load user data (name, photo, address, etc.)
                 const data = await getUserDataWithAuth(currentUser);
-                console.log('✅ User data fetched:', data);
-                console.log('📍 User address:', data?.address ?? '(none)');
-                console.log('🎂 User birth date (dob):', data?.dob ?? '(none)');
                 setUserData(data);
 
-                // If profile is incomplete, redirect to profile setup first
                 const needsProfile =
                     !data?.firstName ||
                     !data?.lastName ||
@@ -111,23 +90,17 @@ const UserDashboard: React.FC = () => {
                     !data?.address ||
                     !data?.dob;
                 if (needsProfile) {
-                    console.log('🧩 Profile incomplete, redirecting to /profile');
                     setIsLoading(false);
                     navigate('/profile', { replace: true });
                     return;
                 }
 
-                // Load QR code using Firebase UID - check Firestore first
-                console.log('🔍 Checking Firestore for QR code for UID:', currentUser.uid);
                 const qr = await getUserQRCode(currentUser.uid, currentUser.email || '');
                 if (qr) {
-                    console.log('✅ QR code found in Firestore');
                     setQrCode(qr);
                     setIsLoading(false);
                 } else {
-                    console.log('⚠️ QR code not found, generating locally...');
                     setIsLoading(false);
-                    // Generate QR code locally immediately - don't await, let it run
                     generateQRCode().catch((err) => {
                         console.error('❌ Failed to generate QR code:', err);
                         setError(`Failed to generate QR code: ${err.message || 'Unknown error'}`);
@@ -141,7 +114,7 @@ const UserDashboard: React.FC = () => {
         };
 
         loadUserData();
-    }, [currentUser, generateQRCode]);
+    }, [currentUser, generateQRCode, navigate]);
 
     const handleDownloadQR = () => {
         if (!qrCode) return;
@@ -154,85 +127,89 @@ const UserDashboard: React.FC = () => {
         document.body.removeChild(link);
     };
 
+    const displayName = userData
+        ? `${userData.firstName} ${userData.lastName}`.trim()
+        : currentUser?.displayName || currentUser?.email || 'Member';
+    const photo = userData?.photo || currentUser?.photoURL || '';
+    const initials = userData
+        ? `${userData.firstName.charAt(0)}${userData.lastName.charAt(0)}`.toUpperCase()
+        : displayName.charAt(0).toUpperCase();
+
     return (
-        <div className="user-dashboard-container">
-            <div className="dashboard-card">
-                <div className="dashboard-header">
-                    <div className="user-info">
-                        {(userData?.photo || currentUser?.photoURL) && (
-                            <img
-                                src={userData?.photo || currentUser?.photoURL || ''}
-                                alt="Profile"
-                                className="profile-picture"
-                            />
+        <div className="page page--stack">
+            <div className="shell shell--md">
+                <header className="page-header">
+                    <div className="identity">
+                        {photo ? (
+                            <img src={photo} alt="" className="avatar" />
+                        ) : (
+                            <div className="avatar avatar--initials">{initials}</div>
                         )}
-                        <div>
-                            <h1>Welcome, {userData ? `${userData.firstName} ${userData.lastName}`.trim() : currentUser?.displayName || currentUser?.email}</h1>
-                            <p className="user-email">{userData?.email || currentUser?.email}</p>
+                        <div className="identity__text">
+                            <h1 className="identity__name">{displayName}</h1>
+                            <p className="identity__meta">{userData?.email || currentUser?.email}</p>
                             {userData?.address && (
-                                <p className="user-address">📍 {userData.address}</p>
+                                <p className="identity__meta">{userData.address}</p>
                             )}
                         </div>
                     </div>
-                </div>
-
-                {(isLoading || isGenerating) && (
-                    <div className="loading-section">
-                        <div className="loading-spinner">
-                            {isGenerating ? 'Generating QR code...' : 'Loading QR code...'}
-                        </div>
-                    </div>
-                )}
-
-                {error && !isLoading && (
-                    <div className="error-message">
-                        {error}
-                        {!qrCode && (
-                            <button onClick={generateQRCode} disabled={isGenerating} className="retry-btn">
-                                {isGenerating ? 'Generating...' : 'Generate QR Code'}
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {qrCode && !isLoading && (
-                    <div className="qr-section">
-                        <h2>Your QR Code</h2>
-                        <p className="qr-description">
-                            Share this QR code to allow others to access your information
-                        </p>
-                        <div className="qr-code-container">
-                            <img src={qrCode} alt="QR Code" className="qr-code-image" />
-                        </div>
-                        <div className="qr-actions">
-                            <button onClick={handleDownloadQR} className="download-btn">
-                                📥 Download QR Code
-                            </button>
-                            <button onClick={() => logout()} className="logout-action-btn">
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {!qrCode && !error && !isLoading && !isGenerating && (
-                    <div className="no-qr-message">
-                        <p>No QR code found. Click to generate one.</p>
-                        <button onClick={generateQRCode} className="generate-btn" disabled={isGenerating}>
-                            {isGenerating ? 'Generating...' : 'Generate QR Code'}
+                    <div className="page-header__actions">
+                        <button type="button" onClick={() => logout()} className="btn btn--ghost">
+                            Sign out
                         </button>
                     </div>
-                )}
+                </header>
 
-                {!qrCode && !error && isGenerating && (
-                    <div className="loading-section">
-                        <div className="loading-spinner">Generating QR code... Please wait...</div>
-                    </div>
-                )}
+                <div className="card">
+                    {(isLoading || isGenerating) && (
+                        <div className="loading">
+                            <div className="spinner" aria-hidden="true" />
+                            {isGenerating ? 'Generating QR code…' : 'Loading QR code…'}
+                        </div>
+                    )}
+
+                    {error && !isLoading && (
+                        <div className="alert alert--error" role="alert">
+                            {error}
+                            {!qrCode && (
+                                <div className="stack-actions">
+                                    <button type="button" onClick={generateQRCode} disabled={isGenerating} className="btn btn--primary btn--block">
+                                        {isGenerating ? 'Generating…' : 'Generate QR code'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {qrCode && !isLoading && (
+                        <div className="qr-block">
+                            <p className="section-title">Your QR code</p>
+                            <p className="page-subtitle">Show this code to identify yourself.</p>
+                            <div className="qr-frame">
+                                <img src={qrCode} alt="Your QR code" />
+                            </div>
+                            <div className="stack-actions">
+                                <button type="button" onClick={handleDownloadQR} className="btn btn--primary btn--block">
+                                    Download
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {!qrCode && !error && !isLoading && !isGenerating && (
+                        <div className="qr-block">
+                            <p className="page-subtitle">No QR code yet.</p>
+                            <div className="stack-actions">
+                                <button type="button" onClick={generateQRCode} className="btn btn--primary btn--block" disabled={isGenerating}>
+                                    {isGenerating ? 'Generating…' : 'Generate QR code'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
 };
 
 export default UserDashboard;
-
