@@ -23,12 +23,12 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  Start([Open /login]) --> Google[Sign in with Google]
+  Start(["Open /login"]) --> Google[Sign in with Google]
   Google --> Check{Profile complete?}
-  Check -->|No| Profile[/profile]
+  Check -->|No| Profile["/profile"]
   Profile --> Save[Save to Firestore]
-  Save --> Dash
-  Check -->|Yes| Dash[/dashboard]
+  Save --> Dash["/dashboard"]
+  Check -->|Yes| Dash
   Dash --> QR[Generate or show QR]
 ```
 
@@ -37,9 +37,9 @@ flowchart TD
 ```mermaid
 sequenceDiagram
   actor Admin
-  participant Scanner as /admin
+  participant Scanner as "/admin"
   participant Firestore
-  participant Details as /user-details
+  participant Details as "/user-details"
 
   Admin->>Scanner: Sign in with email
   Admin->>Scanner: Point camera at QR
