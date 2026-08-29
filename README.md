@@ -23,30 +23,30 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  Start([Open /login]) --> Google[Sign in with Google]
-  Google --> Check{Profile complete?}
-  Check -->|No| Profile[/profile]
-  Profile --> Save[Save to Firestore]
-  Save --> Dash
-  Check -->|Yes| Dash[/dashboard]
-  Dash --> QR[Generate or show QR]
+  A[Open login] --> B[Sign in with Google]
+  B --> C{Profile complete?}
+  C -->|No| D[Complete profile]
+  D --> E[Save to Firestore]
+  E --> F[Open dashboard]
+  C -->|Yes| F
+  F --> G[Generate or show QR]
 ```
 
 ### Admin scan
 
 ```mermaid
 sequenceDiagram
-  actor Admin
-  participant Scanner as /admin
+  participant Admin
+  participant Scanner
   participant Firestore
-  participant Details as /user-details
+  participant MemberPage
 
   Admin->>Scanner: Sign in with email
   Admin->>Scanner: Point camera at QR
   Scanner->>Scanner: Read UID from QR
   Scanner->>Firestore: Get profile by UID
-  Firestore-->>Scanner: Name, email, phone, address
-  Scanner->>Details: Show member card
+  Firestore-->>Scanner: Return profile
+  Scanner->>MemberPage: Show member card
 ```
 
 ### Architecture
