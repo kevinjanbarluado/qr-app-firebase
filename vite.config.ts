@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
@@ -7,5 +7,10 @@ export default defineConfig({
   server: {
     host: '0.0.0.0', // Allow external connections
     port: 5173,
+  },
+  test: {
+    environment: 'jsdom',
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    restoreMocks: true,
   },
 })

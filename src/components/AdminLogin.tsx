@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { APP_NAME } from '../config/app';
+import { getErrorCode } from '../utils/errors';
 import './AdminLogin.css';
 
 const AdminLogin: React.FC = () => {
@@ -17,17 +18,18 @@ const AdminLogin: React.FC = () => {
         try {
             await loginWithGoogle();
             navigate('/profile');
-        } catch (err: any) {
+        } catch (err: unknown) {
             let errorMessage = 'Failed to sign in with Google. Please try again.';
+            const code = getErrorCode(err);
 
-            if (err.code === 'auth/popup-closed-by-user') {
+            if (code === 'auth/popup-closed-by-user') {
                 errorMessage = 'Sign-in popup was closed. Please try again.';
-            } else if (err.code === 'auth/popup-blocked') {
+            } else if (code === 'auth/popup-blocked') {
                 errorMessage = 'Popup was blocked by your browser. Please allow popups and try again.';
-            } else if (err.code === 'auth/cancelled-popup-request') {
+            } else if (code === 'auth/cancelled-popup-request') {
                 errorMessage = 'Only one popup request is allowed at a time.';
-            } else if (err.code) {
-                errorMessage = `Authentication error: ${err.code}`;
+            } else if (code) {
+                errorMessage = `Authentication error: ${code}`;
             }
 
             setError(errorMessage);

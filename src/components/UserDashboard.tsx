@@ -5,6 +5,7 @@ import { generateQRCodeForUser } from '../services/qrGenerator';
 import { getUserDataWithAuth } from '../services/userService';
 import type { UserData } from '../types/user';
 import { useNavigate } from 'react-router-dom';
+import { getErrorMessage } from '../utils/errors';
 import './UserDashboard.css';
 
 const UserDashboard: React.FC = () => {
@@ -59,10 +60,9 @@ const UserDashboard: React.FC = () => {
             console.log('✅ QR code generated successfully! Length:', qrCodeDataURL.length);
             setQrCode(qrCodeDataURL);
             setError(null);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('❌ Error generating QR code locally:', err);
-            const errorMessage = err?.message || err?.toString() || 'Failed to generate QR code. Please try again later.';
-            setError(errorMessage);
+            setError(getErrorMessage(err, 'Failed to generate QR code. Please try again later.'));
         } finally {
             setIsGenerating(false);
             setIsLoading(false);

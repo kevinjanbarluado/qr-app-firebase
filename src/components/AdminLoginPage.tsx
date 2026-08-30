@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdminEmail } from '../config/adminConfig';
 import { APP_NAME } from '../config/app';
+import { getErrorCode } from '../utils/errors';
 import './AdminLogin.css';
 
 const AdminLoginPage: React.FC = () => {
@@ -27,21 +28,22 @@ const AdminLoginPage: React.FC = () => {
         try {
             await login(email, password);
             navigate('/admin');
-        } catch (err: any) {
+        } catch (err: unknown) {
             let errorMessage = 'Failed to sign in. Please check your credentials.';
+            const code = getErrorCode(err);
 
-            if (err.code === 'auth/user-not-found') {
+            if (code === 'auth/user-not-found') {
                 errorMessage = 'No account found with this email address.';
-            } else if (err.code === 'auth/wrong-password') {
+            } else if (code === 'auth/wrong-password') {
                 errorMessage = 'Incorrect password. Please try again.';
-            } else if (err.code === 'auth/invalid-email') {
+            } else if (code === 'auth/invalid-email') {
                 errorMessage = 'Invalid email address.';
-            } else if (err.code === 'auth/user-disabled') {
+            } else if (code === 'auth/user-disabled') {
                 errorMessage = 'This account has been disabled.';
-            } else if (err.code === 'auth/invalid-credential') {
+            } else if (code === 'auth/invalid-credential') {
                 errorMessage = 'Invalid email or password.';
-            } else if (err.code) {
-                errorMessage = `Authentication error: ${err.code}`;
+            } else if (code) {
+                errorMessage = `Authentication error: ${code}`;
             }
 
             setError(errorMessage);
