@@ -100,6 +100,8 @@ Profiles live in the collection named by `VITE_USERS_COLLECTION`, one document p
    The app listens on port `5173`.
 
 ```bash
+npm run lint     # ESLint
+npm run test     # unit tests
 npm run build    # production build
 npm run preview  # serve the build locally
 ```
@@ -137,6 +139,7 @@ src/
   config/       Firebase, app name, Firestore collection, admin emails
   contexts/     Auth state
   services/     Profile and QR helpers
+  utils/        Pure helpers for QR payloads and Firestore field mapping
 ```
 
 ## Troubleshooting

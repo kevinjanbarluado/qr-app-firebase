@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,6 +5,7 @@ import { getUserFromFirestore, saveUserToFirestore } from '../services/userServi
 import type { UserData } from '../types/user';
 import { USERS_COLLECTION } from '../config/firestoreCollections';
 import { APP_NAME } from '../config/app';
+import { getErrorCode, getErrorMessage } from '../utils/errors';
 import './ProfileSetup.css';
 
 const isProfileComplete = (u: UserData | null) => {
@@ -63,8 +63,8 @@ const ProfileSetup: React.FC = () => {
                     address: existing?.address || prev.address,
                     dob: existing?.dob || prev.dob,
                 }));
-            } catch (e: any) {
-                setError(e?.message ?? 'Failed to load profile');
+            } catch (e: unknown) {
+                setError(getErrorMessage(e, 'Failed to load profile'));
             } finally {
                 setLoading(false);
             }
@@ -95,13 +95,14 @@ const ProfileSetup: React.FC = () => {
             });
             console.log('✅ Profile saved to Firestore (users/{uid})', { uid: currentUser.uid });
             navigate('/dashboard', { replace: true });
-        } catch (e: any) {
-            if (e?.code === 'permission-denied' || String(e?.message || '').includes('Missing or insufficient permissions')) {
+        } catch (e: unknown) {
+            const message = getErrorMessage(e, 'Failed to save profile');
+            if (getErrorCode(e) === 'permission-denied' || message.includes('Missing or insufficient permissions')) {
                 setError(
                     `Missing or insufficient permissions. Update Firestore Rules to allow write to ${USERS_COLLECTION}/{uid} (uid=${currentUser.uid}).`
                 );
             } else {
-                setError(e?.message ?? 'Failed to save profile');
+                setError(message);
             }
         } finally {
             setSaving(false);

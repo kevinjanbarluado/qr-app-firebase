@@ -1,6 +1,6 @@
-// @ts-nocheck
 // QR Code Generator Service - Generates QR codes directly in the frontend
 import QRCode from 'qrcode';
+import { encodeQrPayload } from '../utils/qrPayload';
 
 const withTimeout = async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
     let timeoutId: number | undefined;
@@ -19,7 +19,6 @@ const withTimeout = async <T,>(promise: Promise<T>, ms: number, label: string): 
 
 // Verify QRCode library is loaded (don't crash the whole app; surface errors where used)
 if (!QRCode) {
-    // eslint-disable-next-line no-console
     console.error('❌ QRCode library not loaded!');
 }
 
@@ -86,7 +85,7 @@ export const generateQRCodeSVG = async (data: string): Promise<string> => {
  */
 export const generateAndSaveQRCode = async (
     userId: string,
-    userEmail: string,
+    _userEmail: string,
     qrData: string
 ): Promise<string> => {
     try {
@@ -121,17 +120,7 @@ export const generateQRCodeForUser = async (
             additionalData,
         });
 
-        // Create QR code data - you can customize what data to encode
-        // Option 1: Just the UID
-        // const qrData = userId;
-
-        // Option 2: JSON with user info
-        const qrData = JSON.stringify({
-            uid: userId,
-            email: userEmail,
-            name: additionalData?.name || '',
-            timestamp: new Date().toISOString(),
-        });
+        const qrData = encodeQrPayload(userId, userEmail, additionalData);
 
         console.log('📝 QR code data to encode:', qrData);
 

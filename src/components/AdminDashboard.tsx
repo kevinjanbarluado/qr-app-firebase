@@ -3,6 +3,7 @@ import QrScanner from 'qr-scanner';
 import { useNavigate } from 'react-router-dom';
 import { getUserFromFirestore } from '../services/userService';
 import { APP_NAME } from '../config/app';
+import { parseQrUserId } from '../utils/qrPayload';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -66,14 +67,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         try {
             console.log('📱 QR Code scanned:', qrData);
 
-            let userId: string | null = null;
-
-            try {
-                const parsed = JSON.parse(qrData);
-                userId = parsed.uid || parsed.userId || parsed.id || null;
-            } catch {
-                userId = qrData.trim();
-            }
+            const userId = parseQrUserId(qrData);
 
             if (!userId) {
                 setError('Invalid QR code format. Could not extract user ID.');
